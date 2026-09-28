@@ -12,8 +12,8 @@ android {
         applicationId = "com.juanito.afinador"
         minSdk = 34
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.4"
 
         
     }

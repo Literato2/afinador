@@ -3,6 +3,7 @@ package com.juanito.afinador
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -90,6 +91,8 @@ fun TunerScreen(
         Spacer(Modifier.weight(1f))
         Strings(state)
         Spacer(Modifier.height(20.dp))
+        // Se desvanece al sonar la primera nota; conserva el hueco para que nada salte.
+        val dedication by animateFloatAsState(if (state.started) 0f else 1f, tween(600), label = "dedicatoria")
         Text(
             "De Literato, para sus amigos de la tuna.\nPorque por más que le pese a Nobita, a veces hay que afinar.",
             color = Muted,
@@ -97,6 +100,7 @@ fun TunerScreen(
             fontStyle = FontStyle.Italic,
             textAlign = TextAlign.Center,
             lineHeight = 16.sp,
+            modifier = Modifier.alpha(dedication),
         )
     }
 }

@@ -22,6 +22,9 @@ class TunerState(initial: Instrument) {
     var live by mutableStateOf(false)
         private set
     val tuned = mutableStateListOf<Int>()
+    /** Ya sonó alguna nota en esta sesión (oculta la dedicatoria). */
+    var started by mutableStateOf(false)
+        private set
 
     private var inTuneSince = 0L
 
@@ -38,6 +41,7 @@ class TunerState(initial: Instrument) {
         hz = value
         cents = c
         live = true
+        started = true
 
         if (abs(c) <= Tuning.IN_TUNE_CENTS) {
             val now = SystemClock.elapsedRealtime()

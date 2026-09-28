@@ -52,7 +52,8 @@
   .string button.locked { border-color: var(--amber); }
   .string span { font-size: 12px; color: var(--muted); }
   .string span.done { color: var(--green); }
-  .dedication { font-size: 12px; font-style: italic; color: var(--muted); text-align: center; line-height: 16px; margin-top: 20px; }
+  .dedication { transition: opacity 0.6s; font-size: 12px; font-style: italic; color: var(--muted); text-align: center; line-height: 16px; margin-top: 20px; }
+  .dedication.gone { opacity: 0; }
   #start { position: fixed; inset: 0; background: rgba(14,15,17,0.92); display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; z-index: 2; }
   #start[hidden] { display: none !important; }
@@ -90,7 +91,7 @@
   <p class="help" id="help">Detecta la cuerda sola. Pulsa una para fijarla.</p>
   <div class="strings" id="strings"></div>
 
-  <p class="dedication">De Literato, para sus amigos de la tuna.<br>Porque por más que le pese a Nobita, a veces hay que afinar.</p>
+  <p class="dedication" id="dedication">De Literato, para sus amigos de la tuna.<br>Porque por más que le pese a Nobita, a veces hay que afinar.</p>
 </main>
 
 <div id="start">
@@ -197,6 +198,7 @@ function onPitch(hz) {
     state.hz = hz;
     state.cents = cents(hz, s.hz);
     state.live = true;
+    $("dedication").classList.add("gone");
     if (Math.abs(state.cents) <= IN_TUNE) {
       const now = performance.now();
       if (!state.inTuneSince) state.inTuneSince = now;
