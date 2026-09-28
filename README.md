@@ -10,6 +10,9 @@ Guitarra estándar (E A D G B E) y bandurria española (G♯ C♯ F♯ B E A).
 **[Afinador.apk](https://github.com/Literato2/afinador/releases/latest/download/Afinador.apk)** (Android 14+).
 Ábrelo desde el móvil y acepta "instalar apps de origen desconocido".
 
+**iPhone (o cualquier móvil): versión web** en https://literato2.github.io/afinador/
+Ábrela en Safari → Compartir → "Añadir a pantalla de inicio". Queda como una app, con icono.
+
 ## Uso
 
 Abre la app y toca una cuerda. En **AUTO** detecta la cuerda sola; pulsa una cuerda

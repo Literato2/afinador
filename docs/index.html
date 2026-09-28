@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Afinador</title>
+<meta name="description" content="Afinador de guitarra y bandurria, sin anuncios.">
+<meta name="theme-color" content="#0E0F11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Afinador">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #0E0F11; --surface: #1A1C20; --muted: #6B7078; --text: #F2F3F5;
+    --green: #2FD37A; --amber: #FFB020; --red: #FF5A4E; --accent: var(--muted);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+  main { height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column;
+    padding: calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 14px); }
+  header { display: flex; align-items: center; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; flex: 1; }
+  .mode { font-size: 13px; font-weight: 700; background: var(--surface); border-radius: 99px; padding: 6px 12px; color: var(--green); }
+  .mode.manual { color: var(--amber); }
+  .picker { display: flex; background: var(--surface); border-radius: 99px; padding: 4px; margin-top: 16px; }
+  .picker button { flex: 1; border: 0; background: transparent; color: var(--muted); font-weight: 600; font-size: 15px;
+    font-family: inherit; padding: 10px 0; border-radius: 99px; cursor: pointer; }
+  .picker button.on { background: var(--text); color: var(--bg); }
+  .gauge { margin-top: auto; }
+  svg { width: 100%; display: block; overflow: visible; }
+  #needle { transform-origin: 150px 140px; transition: transform 0.25s cubic-bezier(.3,1.4,.5,1), stroke 0.2s; }
+  .readout { text-align: center; margin-top: 8px; transition: opacity 0.2s; }
+  .readout.idle { opacity: 0.45; }
+  .note { font-size: 96px; font-weight: 700; line-height: 1; color: var(--accent); transition: color 0.2s; }
+  .note sub { font-size: 28px; font-weight: 400; vertical-align: baseline; margin-left: 2px; }
+  .hint { font-size: 20px; font-weight: 500; margin-top: 8px; color: var(--accent); }
+  .detail { font-size: 14px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .help { font-size: 13px; color: var(--muted); text-align: center; margin: auto 0 14px; }
+  .strings { display: flex; justify-content: space-evenly; }
+  .string { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .string button { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--surface);
+    background: var(--surface); color: var(--text); font-family: inherit; font-weight: 700; font-size: 20px; cursor: pointer; padding: 0; }
+  .string button.long { font-size: 17px; }
+  .string button.active { background: var(--text); color: var(--bg); }
+  .string button.done { border-color: var(--green); }
+  .string button.locked { border-color: var(--amber); }
+  .string span { font-size: 12px; color: var(--muted); }
+  .string span.done { color: var(--green); }
+  .dedication { font-size: 12px; font-style: italic; color: var(--muted); text-align: center; line-height: 16px; margin-top: 20px; }
+  #start { position: fixed; inset: 0; background: rgba(14,15,17,0.92); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; z-index: 2; }
+  #start[hidden] { display: none !important; }
+  #start img { width: 112px; height: 112px; border-radius: 50%; }
+  #start p { color: var(--muted); margin: 0; max-width: 300px; line-height: 1.4; }
+  #start button { border: 0; border-radius: 99px; background: var(--green); color: var(--bg);
+    font-family: inherit; font-weight: 700; font-size: 18px; padding: 14px 36px; cursor: pointer; }
+  #error { color: var(--red) !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Afinador</h1>
+    <span class="mode" id="mode">AUTO</span>
+  </header>
+
+  <div class="picker" id="picker"></div>
+
+  <div class="gauge">
+    <svg viewBox="0 0 300 150" aria-hidden="true">
+      <path d="M 37.4 75 A 130 130 0 0 1 262.6 75" fill="none" stroke="#1A1C20" stroke-width="12" stroke-linecap="round"/>
+      <path id="zone" fill="none" stroke="rgba(47,211,122,0.35)" stroke-width="12"/>
+      <g id="ticks"></g>
+      <line id="needle" x1="150" y1="140" x2="150" y2="6" stroke="#6B7078" stroke-width="4" stroke-linecap="round"/>
+      <circle id="hub" cx="150" cy="140" r="8" fill="#6B7078"/>
+    </svg>
+    <div class="readout idle" id="readout">
+      <div class="note" id="note">E<sub>2</sub></div>
+      <div class="hint" id="hint">Toca una cuerda</div>
+      <div class="detail" id="detail">82,41 Hz</div>
+    </div>
+  </div>
+
+  <p class="help" id="help">Detecta la cuerda sola. Pulsa una para fijarla.</p>
+  <div class="strings" id="strings"></div>
+
+  <p class="dedication">De Literato, para sus amigos de la tuna.<br>Porque por más que le pese a Nobita, a veces hay que afinar.</p>
+</main>
+
+<div id="start">
+  <img src="icon-180.png" alt="">
+  <p>Necesito el micrófono para oír el instrumento.</p>
+  <button id="go">Empezar</button>
+  <p id="error" hidden></p>
+</div>
+
+<script type="module">
+import { createYin, INSTRUMENTS, cents, closest } from "./yin.js";
+
+const IN_TUNE = 4;
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d) => v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function load(key, fallback) { try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; } }
+function save(key, value) { try { localStorage.setItem(key, value); } catch {} }
+
+const state = {
+  instrument: INSTRUMENTS[load("instrumento", "guitarra")] ? load("instrumento", "guitarra") : "guitarra",
+  locked: null,
+  target: null,
+  live: false,
+  hz: 0,
+  cents: 0,
+  tuned: new Set(),
+  inTuneSince: 0,
+};
+state.target = INSTRUMENTS[state.instrument].strings[0];
+
+// --- Dial estático ---
+const C = { x: 150, y: 140 }, R = 130;
+const pt = (deg, r) => [C.x + r * Math.cos(deg * Math.PI / 180), C.y + r * Math.sin(deg * Math.PI / 180)];
+{
+  const span = 1.2 * IN_TUNE;
+  const [x1, y1] = pt(270 - span, R), [x2, y2] = pt(270 + span, R);
+  $("zone").setAttribute("d", `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`);
+  let ticks = "";
+  for (let t = -50; t <= 50; t += 10) {
+    const a = 270 + t * 1.2, len = t === 0 ? 18 : 10;
+    const [xa, ya] = pt(a, R - 16), [xb, yb] = pt(a, R - 16 - len);
+    ticks += `<line x1="${xa}" y1="${ya}" x2="${xb}" y2="${yb}" stroke="${t === 0 ? "#2FD37A" : "#6B7078"}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  $("ticks").innerHTML = ticks;
+}
+
+// --- Pintado ---
+function colorFor(c) {
+  const a = Math.abs(c);
+  return a <= IN_TUNE ? "var(--green)" : a <= 15 ? "var(--amber)" : "var(--red)";
+}
+
+function renderPicker() {
+  $("picker").innerHTML = Object.entries(INSTRUMENTS)
+    .map(([k, v]) => `<button data-k="${k}" class="${k === state.instrument ? "on" : ""}">${v.label}</button>`)
+    .join("");
+}
+
+function renderStrings() {
+  const strings = INSTRUMENTS[state.instrument].strings;
+  $("strings").innerHTML = strings.map((s, i) => {
+    const active = s === state.target && (state.live || state.locked === s);
+    const done = state.tuned.has(s.n);
+    const cls = [s.name.length > 1 ? "long" : "", active ? "active" : "", state.locked === s ? "locked" : done ? "done" : ""].join(" ");
+    return `<div class="string"><button data-i="${i}" class="${cls}">${s.name}</button>` +
+      `<span class="${done ? "done" : ""}">${done ? "✓" : s.n + "ª"}</span></div>`;
+  }).join("");
+  const auto = state.locked === null;
+  $("mode").textContent = auto ? "AUTO" : "MANUAL";
+  $("mode").classList.toggle("manual", !auto);
+  $("help").textContent = auto ? "Detecta la cuerda sola. Pulsa una para fijarla." : "Fijada. Púlsala otra vez para volver a AUTO.";
+}
+
+function renderReadout() {
+  const { live, cents: c, target: t } = state;
+  const accent = live ? colorFor(c) : "var(--muted)";
+  document.documentElement.style.setProperty("--accent", accent);
+  $("needle").style.transform = `rotate(${live ? Math.max(-50, Math.min(50, c)) * 1.2 : 0}deg)`;
+  $("needle").style.stroke = accent;
+  $("hub").style.fill = accent;
+  $("readout").classList.toggle("idle", !live);
+  $("note").innerHTML = `${t.name}<sub>${t.oct}</sub>`;
+  $("hint").textContent = !live ? "Toca una cuerda"
+    : Math.abs(c) <= IN_TUNE ? "Afinada"
+    : c > 50 ? "Muy alta: afloja"
+    : c < -50 ? "Muy baja: aprieta"
+    : c > 0 ? "Alta: afloja" : "Baja: aprieta";
+  $("detail").textContent = live ? `${c > 0 ? "+" : ""}${Math.round(c)} cents · ${fmt(state.hz, 1)} Hz` : `${fmt(t.hz, 2)} Hz`;
+}
+
+function render() { renderStrings(); renderReadout(); }
+
+// --- Lógica (igual que TunerState en Android) ---
+function onPitch(hz) {
+  const wasLive = state.live, prevTarget = state.target, doneBefore = state.tuned.size;
+  if (hz == null) {
+    state.live = false;
+    state.inTuneSince = 0;
+  } else {
+    const s = state.locked ?? closest(hz, INSTRUMENTS[state.instrument].strings);
+    if (s !== state.target) state.inTuneSince = 0;
+    state.target = s;
+    state.hz = hz;
+    state.cents = cents(hz, s.hz);
+    state.live = true;
+    if (Math.abs(state.cents) <= IN_TUNE) {
+      const now = performance.now();
+      if (!state.inTuneSince) state.inTuneSince = now;
+      if (now - state.inTuneSince > 700) state.tuned.add(s.n);
+    } else {
+      state.inTuneSince = 0;
+    }
+  }
+  if (wasLive !== state.live || prevTarget !== state.target || doneBefore !== state.tuned.size) renderStrings();
+  renderReadout();
+}
+
+$("picker").addEventListener("click", (e) => {
+  const k = e.target.dataset?.k;
+  if (!k || k === state.instrument) return;
+  state.instrument = k;
+  state.locked = null;
+  state.target = INSTRUMENTS[k].strings[0];
+  state.live = false;
+  state.tuned.clear();
+  save("instrumento", k);
+  renderPicker();
+  render();
+});
+
+$("strings").addEventListener("click", (e) => {
+  const i = e.target.closest("button")?.dataset.i;
+  if (i === undefined) return;
+  const s = INSTRUMENTS[state.instrument].strings[i];
+  state.locked = state.locked === s ? null : s;
+  state.target = s;
+  state.live = false;
+  render();
+});
+
+// --- Audio ---
+const SIZE = 4096, HOP_MS = 25, MEDIAN_OF = 5;
+let ctx, analyser, track, timer, wakeLock;
+
+async function start() {
+  $("error").hidden = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    track = stream.getAudioTracks()[0];
+    ctx = ctx ?? new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = SIZE;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+
+    const yin = createYin(ctx.sampleRate, SIZE);
+    const buf = new Float32Array(SIZE);
+    const recent = [];
+    clearInterval(timer);
+    timer = setInterval(() => {
+      analyser.getFloatTimeDomainData(buf);
+      const hz = yin(buf);
+      if (hz == null) { recent.length = 0; return onPitch(null); }
+      recent.push(hz);
+      if (recent.length > MEDIAN_OF) recent.shift();
+      onPitch([...recent].sort((a, b) => a - b)[recent.length >> 1]);
+    }, HOP_MS);
+
+    $("start").hidden = true;
+    keepAwake();
+  } catch (err) {
+    $("error").textContent = err?.name === "NotAllowedError"
+      ? "Sin permiso de micrófono. Actívalo en Ajustes > Safari > Micrófono (o en los permisos del navegador) y vuelve a pulsar."
+      : "No he podido abrir el micrófono: " + (err?.message || err);
+    $("error").hidden = false;
+  }
+}
+
+async function keepAwake() {
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch {}
+}
+
+// Al volver a la app: iOS suele cortar el micro en segundo plano.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (!track || track.readyState === "ended" || ctx?.state === "closed") {
+    clearInterval(timer);
+    onPitch(null);
+    $("start").hidden = false;
+  } else {
+    ctx.resume();
+    keepAwake();
+  }
+});
+
+$("go").addEventListener("click", start);
+renderPicker();
+render();
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
