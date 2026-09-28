@@ -12,7 +12,11 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
 
-    private val state = TunerState()
+    private val prefs by lazy { getSharedPreferences("afinador", MODE_PRIVATE) }
+    private val state by lazy {
+        val saved = prefs.getString("instrumento", null)
+        TunerState(Instrument.entries.firstOrNull { it.name == saved } ?: Instrument.GUITARRA)
+    }
     private val engine = PitchEngine { hz -> runOnUiThread { state.onPitch(hz) } }
     private val micGranted = mutableStateOf(false)
 
@@ -29,6 +33,10 @@ class MainActivity : ComponentActivity() {
                 state = state,
                 micGranted = micGranted.value,
                 onAskMic = { askMic.launch(Manifest.permission.RECORD_AUDIO) },
+                onInstrument = { next ->
+                    state.select(next)
+                    prefs.edit().putString("instrumento", next.name).apply()
+                },
             )
         }
     }

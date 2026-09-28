@@ -7,10 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlin.math.abs
 
-class TunerState {
+class TunerState(initial: Instrument) {
+    var instrument by mutableStateOf(initial)
+        private set
     /** null = automático; si no, la cuerda fijada a mano. */
     var locked by mutableStateOf<GuitarString?>(null)
-    var target by mutableStateOf(Tuning.strings[0])
+    var target by mutableStateOf(initial.strings[0])
         private set
     var hz by mutableStateOf<Float?>(null)
         private set
@@ -29,7 +31,7 @@ class TunerState {
             inTuneSince = 0L
             return
         }
-        val string = locked ?: Tuning.closest(value)
+        val string = locked ?: Tuning.closest(value, instrument.strings)
         val c = Tuning.cents(value, string.hz)
         if (string != target) inTuneSince = 0L
         target = string
@@ -44,6 +46,15 @@ class TunerState {
         } else {
             inTuneSince = 0L
         }
+    }
+
+    fun select(next: Instrument) {
+        if (next == instrument) return
+        instrument = next
+        locked = null
+        target = next.strings[0]
+        live = false
+        tuned.clear()
     }
 
     fun toggleLock(string: GuitarString) {

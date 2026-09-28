@@ -58,7 +58,12 @@ private fun colorFor(cents: Float): Color = when {
 }
 
 @Composable
-fun TunerScreen(state: TunerState, micGranted: Boolean, onAskMic: () -> Unit) {
+fun TunerScreen(
+    state: TunerState,
+    micGranted: Boolean,
+    onAskMic: () -> Unit,
+    onInstrument: (Instrument) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -68,6 +73,8 @@ fun TunerScreen(state: TunerState, micGranted: Boolean, onAskMic: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Header(auto = state.locked == null)
+        Spacer(Modifier.height(16.dp))
+        InstrumentPicker(state.instrument, onInstrument)
 
         if (!micGranted) {
             Spacer(Modifier.weight(1f))
@@ -109,6 +116,34 @@ private fun Header(auto: Boolean) {
                 .background(Surface)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         )
+    }
+}
+
+@Composable
+private fun InstrumentPicker(current: Instrument, onPick: (Instrument) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(50))
+            .background(Surface)
+            .padding(4.dp),
+    ) {
+        Instrument.entries.forEach { instrument ->
+            val selected = instrument == current
+            Text(
+                instrument.label,
+                color = if (selected) Bg else Muted,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (selected) TextMain else Color.Transparent)
+                    .clickable { onPick(instrument) }
+                    .padding(vertical = 10.dp),
+            )
+        }
     }
 }
 
@@ -197,7 +232,7 @@ private fun Strings(state: TunerState) {
         )
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Tuning.strings.forEach { s ->
+            state.instrument.strings.forEach { s ->
                 val active = s == state.target && (state.live || state.locked == s)
                 val done = s.number in state.tuned
                 val ring = when {
@@ -218,7 +253,7 @@ private fun Strings(state: TunerState) {
                         Text(
                             s.name,
                             color = if (active) Bg else TextMain,
-                            fontSize = 20.sp,
+                            fontSize = if (s.name.length > 1) 17.sp else 20.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
