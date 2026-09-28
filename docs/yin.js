@@ -67,10 +67,28 @@ export const INSTRUMENTS = {
       { n: 1, name: "A", oct: 5, hz: 880.0 },
     ],
   },
+  // Cualquier nota: se calcula la más cercana (temperado, La4 = 440 Hz).
+  cromatico: { label: "Cromático", strings: [] },
 };
+
+const NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+const noteCache = new Map();
+
+// Nota temperada más cercana; n = 0 porque no es una cuerda. Cacheada para que
+// la misma nota sea el mismo objeto (la UI compara por identidad).
+export function nearestNote(hz) {
+  const midi = Math.round(69 + 12 * Math.log2(hz / 440));
+  if (!noteCache.has(midi)) {
+    noteCache.set(midi, { n: 0, name: NAMES[((midi % 12) + 12) % 12], oct: Math.floor(midi / 12) - 1, hz: 440 * 2 ** ((midi - 69) / 12) });
+  }
+  return noteCache.get(midi);
+}
+
+export const initialTarget = (key) => INSTRUMENTS[key].strings[0] ?? nearestNote(440);
 
 export const cents = (hz, target) => 1200 * Math.log2(hz / target);
 
 export function closest(hz, strings) {
+  if (!strings.length) return nearestNote(hz);
   return strings.reduce((a, b) => (Math.abs(cents(hz, b.hz)) < Math.abs(cents(hz, a.hz)) ? b : a));
 }

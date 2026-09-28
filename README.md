@@ -1,6 +1,6 @@
 # Afinador
 
-Afinador de guitarra y bandurria para Android. Sin anuncios, arranca al momento.
+Afinador de guitarra, bandurria y cromático para Android y web. Sin anuncios, arranca al momento.
 Guitarra estándar (E A D G B E) y bandurria española (G♯ C♯ F♯ B E A).
 
 *De Literato, para sus amigos de la tuna. Porque por más que le pese a Nobita, a veces hay que afinar.*

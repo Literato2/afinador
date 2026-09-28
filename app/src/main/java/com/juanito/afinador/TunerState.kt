@@ -12,7 +12,7 @@ class TunerState(initial: Instrument) {
         private set
     /** null = automático; si no, la cuerda fijada a mano. */
     var locked by mutableStateOf<GuitarString?>(null)
-    var target by mutableStateOf(initial.strings[0])
+    var target by mutableStateOf(Tuning.initialTarget(initial))
         private set
     var hz by mutableStateOf<Float?>(null)
         private set
@@ -46,7 +46,7 @@ class TunerState(initial: Instrument) {
         if (abs(c) <= Tuning.IN_TUNE_CENTS) {
             val now = SystemClock.elapsedRealtime()
             if (inTuneSince == 0L) inTuneSince = now
-            if (now - inTuneSince > 700 && string.number !in tuned) tuned.add(string.number)
+            if (now - inTuneSince > 700 && string.number > 0 && string.number !in tuned) tuned.add(string.number)
         } else {
             inTuneSince = 0L
         }
@@ -56,7 +56,7 @@ class TunerState(initial: Instrument) {
         if (next == instrument) return
         instrument = next
         locked = null
-        target = next.strings[0]
+        target = Tuning.initialTarget(next)
         live = false
         tuned.clear()
     }

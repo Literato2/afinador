@@ -73,7 +73,7 @@ fun TunerScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Header(auto = state.locked == null)
+        Header(auto = state.locked == null, chromatic = state.instrument == Instrument.CROMATICO)
         Spacer(Modifier.height(16.dp))
         InstrumentPicker(state.instrument, onInstrument)
 
@@ -89,7 +89,16 @@ fun TunerScreen(
         Spacer(Modifier.weight(0.6f))
         Gauge(state)
         Spacer(Modifier.weight(1f))
-        Strings(state)
+        if (state.instrument == Instrument.CROMATICO) {
+            Text(
+                "Cualquier nota, afinación temperada con La a 440 Hz.",
+                color = Muted,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            Strings(state)
+        }
         Spacer(Modifier.height(20.dp))
         // Se desvanece al sonar la primera nota; conserva el hueco para que nada salte.
         val dedication by animateFloatAsState(if (state.started) 0f else 1f, tween(600), label = "dedicatoria")
@@ -106,12 +115,12 @@ fun TunerScreen(
 }
 
 @Composable
-private fun Header(auto: Boolean) {
+private fun Header(auto: Boolean, chromatic: Boolean) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text("Afinador", color = TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.weight(1f))
         Text(
-            if (auto) "AUTO" else "MANUAL",
+            if (chromatic) "La 440" else if (auto) "AUTO" else "MANUAL",
             color = if (auto) Green else Amber,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,

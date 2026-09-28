@@ -1,5 +1,5 @@
 // Caché para que abra sin conexión. Subir la versión al cambiar cualquier archivo.
-const CACHE = "afinador-v2";
+const CACHE = "afinador-v3";
 const FILES = ["./", "index.html", "yin.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

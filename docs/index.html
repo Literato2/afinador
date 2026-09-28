@@ -102,7 +102,7 @@
 </div>
 
 <script type="module">
-import { createYin, INSTRUMENTS, cents, closest } from "./yin.js";
+import { createYin, INSTRUMENTS, cents, closest, initialTarget } from "./yin.js";
 
 const IN_TUNE = 4;
 const $ = (id) => document.getElementById(id);
@@ -121,7 +121,7 @@ const state = {
   tuned: new Set(),
   inTuneSince: 0,
 };
-state.target = INSTRUMENTS[state.instrument].strings[0];
+state.target = initialTarget(state.instrument);
 
 // --- Dial estático ---
 const C = { x: 150, y: 140 }, R = 130;
@@ -160,10 +160,11 @@ function renderStrings() {
     return `<div class="string"><button data-i="${i}" class="${cls}">${s.name}</button>` +
       `<span class="${done ? "done" : ""}">${done ? "✓" : s.n + "ª"}</span></div>`;
   }).join("");
-  const auto = state.locked === null;
-  $("mode").textContent = auto ? "AUTO" : "MANUAL";
+  const auto = state.locked === null, chromatic = !strings.length;
+  $("mode").textContent = chromatic ? "La 440" : auto ? "AUTO" : "MANUAL";
   $("mode").classList.toggle("manual", !auto);
-  $("help").textContent = auto ? "Detecta la cuerda sola. Pulsa una para fijarla." : "Fijada. Púlsala otra vez para volver a AUTO.";
+  $("help").textContent = chromatic ? "Cualquier nota, afinación temperada con La a 440 Hz."
+    : auto ? "Detecta la cuerda sola. Pulsa una para fijarla." : "Fijada. Púlsala otra vez para volver a AUTO.";
 }
 
 function renderReadout() {
@@ -202,7 +203,7 @@ function onPitch(hz) {
     if (Math.abs(state.cents) <= IN_TUNE) {
       const now = performance.now();
       if (!state.inTuneSince) state.inTuneSince = now;
-      if (now - state.inTuneSince > 700) state.tuned.add(s.n);
+      if (now - state.inTuneSince > 700 && s.n > 0) state.tuned.add(s.n);
     } else {
       state.inTuneSince = 0;
     }
@@ -216,7 +217,7 @@ $("picker").addEventListener("click", (e) => {
   if (!k || k === state.instrument) return;
   state.instrument = k;
   state.locked = null;
-  state.target = INSTRUMENTS[k].strings[0];
+  state.target = initialTarget(k);
   state.live = false;
   state.tuned.clear();
   save("instrumento", k);

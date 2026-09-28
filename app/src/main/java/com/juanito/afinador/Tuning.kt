@@ -2,6 +2,8 @@ package com.juanito.afinador
 
 import kotlin.math.abs
 import kotlin.math.log2
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
 data class GuitarString(val number: Int, val name: String, val octave: Int, val hz: Float)
 
@@ -31,6 +33,9 @@ enum class Instrument(val label: String, val strings: List<GuitarString>) {
             GuitarString(1, "A", 5, 880.00f),
         ),
     ),
+
+    // Cualquier nota: se calcula la más cercana (temperado, La4 = 440 Hz).
+    CROMATICO("Cromático", emptyList()),
 }
 
 object Tuning {
@@ -38,6 +43,18 @@ object Tuning {
 
     fun cents(hz: Float, target: Float): Float = 1200f * log2(hz / target)
 
+    private val NAMES = listOf("C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B")
+
     fun closest(hz: Float, strings: List<GuitarString>): GuitarString =
-        strings.minBy { abs(cents(hz, it.hz)) }
+        if (strings.isEmpty()) nearestNote(hz) else strings.minBy { abs(cents(hz, it.hz)) }
+
+    /** Nota temperada más cercana; `number` = 0 porque no es una cuerda. */
+    fun nearestNote(hz: Float): GuitarString {
+        val midi = (69 + 12 * log2(hz / 440f)).roundToInt()
+        val noteHz = 440f * 2f.pow((midi - 69) / 12f)
+        return GuitarString(0, NAMES[midi.mod(12)], midi / 12 - 1, noteHz)
+    }
+
+    fun initialTarget(instrument: Instrument): GuitarString =
+        instrument.strings.firstOrNull() ?: GuitarString(0, "A", 4, 440f)
 }
